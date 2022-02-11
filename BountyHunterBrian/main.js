@@ -5,10 +5,12 @@ var config = {
   physics: {
       default: 'arcade',
       arcade: {
-          gravity: { y:0 },
-          debug: false
+          gravity: { y:300 },
+          debug: true
       }
   },
+
+  pixelArt: true,
   scene: {
       preload: preload,
       create: create,
@@ -17,14 +19,11 @@ var config = {
   };
 
   // player variable (will create class later on).
-  var player;
-
+  var player, weapon, platforms;
+  var lastFired;
 
   // instead of noting each input key. create a list instead.
-  var keyLeft, keyRight, keyUp, keyDown;
-  // create separate booleans to check the last key player has pressed.
-  var isKeyRightPressed = false;
-  var isKeyLeftPressed = false;
+  var keyinputs;
 
   var game = new Phaser.Game(config);
 
@@ -32,124 +31,81 @@ alert("javascript is broke");
 function preload()
 {
   this.load.image("sky", "assets/sky.png");
-  this.load.spritesheet("player", "assets/playersprite.png",{frameWidth: 120, frameHeight: 160});
+  this.load.image("platforms", "assets/platform.png");
+  this.load.image("player", "assets/character.png");
+  this.load.image("gun", "assets/weapon.png");
+  this.load.image("bullet", "assets/bullet.png")
 }
 function create()
 {
   this.add.image(400,300, "sky");
-  player = this.physics.add.sprite(100,100, "player");
 
-//animation section
-  this.anims.create({
-      key: "move_right",
-      frames: this.anims.generateFrameNumbers("player", {start: 12, end: 19}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "move_left",
-      frames: this.anims.generateFrameNumbers("player", {start:20, end:26}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "idle-right",
-      frames: this.anims.generateFrameNumbers("player", {start: 0, end: 5}),
-      frameRate: 15,
+  weapon = this.add.image(100,100, "gun").setDepth(1);
+  var testproj = this.add.image(100,100,"bullet");
 
-  });
-  this.anims.create({
-      key: "idle-left",
-      frames: this.anims.generateFrameNumbers("player", {start:6,end:11}),
-      frameRate: 15,
-      repeat: -1
-  });
+  player = this.physics.add.image(100,100, "player");
+  player.setCollideWorldBounds(true);
+  player.setSize(0);
+
+  var bullets = this.physics.add.group({
+        defaultKey: "bullet",
+        maxSize: NaN,
+    });
+
+  function tryShoot(key){
+          var bullet = bullets.get(weapon.x, weapon.y);
+          if (bullet){
+            fireBullet.call(this, bullet);
+          }
+          console.log("shoot");
+    }
+
+  platforms = this.physics.add.staticGroup();
+  platforms.create(400, 568, "platforms").setScale(2).refreshBody();
+  this.physics.add.collider(player, platforms);
 
 
-  this.anims.create({
-      key: "r_punch_left",
-      frames: this.anims.generateFrameNumbers("player", {start:27,end:30}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "r_punch_right",
-      frames: this.anims.generateFrameNumbers("player", {start:31,end:34}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "l_punch_left",
-      frames: this.anims.generateFrameNumbers("player", {start:35,end:39}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "l_punch_right",
-      frames: this.anims.generateFrameNumbers("player", {start:40,end:44}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "shoot_left",
-      frames: this.anims.generateFrameNumbers("player", {start:45,end:49}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "shoot_right",
-      frames: this.anims.generateFrameNumbers("player", {start:50,end:54}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "death-left",
-      frames: this.anims.generateFrameNumbers("player", {start:55,end:60}),
-      frameRate: 15,
-      repeat: -1
-  });
-  this.anims.create({
-      key: "death-right",
-      frames: this.anims.generateFrameNumbers("player", {start:61,end:65}),
-      frameRate: 15,
-      repeat: -1
-  });
-// end of animation section
+//key input binds
 
-// keyboard input keys.
-keyLeft = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-keyRight = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
-keyUp = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-keyDown = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+this.input.keyboard.on("keydown-J", tryShoot, this);
+
+keyinputs = {
+a:this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+d: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+w: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
+j:this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.J)
+};
+
 
 }
 function update(){
 
-  if (keyRight.isDown && keyLeft.isUp){
-    isKeyLeftPressed = false;
-    isKeyRightPressed = true;
-    player.anims.play("move_right", true);
-    player.setVelocityX(150);
-  } else if (keyLeft.isDown && keyRight.isUp){
-    isKeyLeftPressed = true;
-    isKeyRightPressed = false;
-    player.anims.play("move_left", true);
-    player.setVelocityX(-150);
-  } else if (keyRight.isUp && !isKeyLeftPressed){
-    player.anims.play("idle-right",true);
-    player.setVelocityX(0);
-  } else if (keyLeft.isUp && !isKeyRightPressed){
-    player.anims.play("idle-left", true);
-    player.setVelocityX(0);
+  if (!player.flipX){
+    weapon.x = player.x + 30;
+    weapon.y = player.y;
+  }
+  else if (player.flipX){
+    weapon.x = player.x - 30;
+    weapon.y = player.y;
   }
 
-  if (keyUp.isDown && keyDown.isUp){
-    player.setVelocityY(-150);
-  } else if (keyDown.isDown && keyUp.isUp){
-    player.setVelocityY(150);
-  }
-   else if (keyUp.isUp && keyDown.isUp){
-    player.setVelocityY(0);
-  }
+if (keyinputs.d.isDown){
+  player.setVelocityX(330);
+  player.flipX = false;
+  weapon.flipX = false;
+} else if (keyinputs.a.isDown){
+  player.setVelocityX(-330);
+  player.flipX = true;
+  weapon.flipX = true;
+} else {
+    player.setVelocityX(0);
+    }
+ if (keyinputs.space.isDown && player.body.touching.down){
+    player.setVelocityY(-330);
+ }
+}
+
+function fireBullet(bullet, velocity){
 
 }
