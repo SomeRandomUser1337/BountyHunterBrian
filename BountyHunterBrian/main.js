@@ -55,7 +55,7 @@ function create()
   function tryShoot(key){
           var bullet = bullets.get(weapon.x, weapon.y);
           if (bullet){
-            fireBullet.call(this, bullet);
+            fireBullet.call(this, bullet.x, bullet.y);
           }
           console.log("shoot");
     }
@@ -106,6 +106,9 @@ if (keyinputs.d.isDown){
  }
 }
 
-function fireBullet(bullet, velocity){
-
+function fireBullet(x, y){
+  console.log(x);
+  console.log(y);
+  x.setVelocityX(50);
+  console.log("launching");
 }
