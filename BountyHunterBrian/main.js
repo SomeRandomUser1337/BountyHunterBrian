@@ -21,7 +21,12 @@ class MainScene extends Phaser.Scene {
     this.add.image(400,300, "sky");
 
     this.player = this.physics.add.image(100,100, "player");
-    this.player.setCollideWorldBounds = true;
+    this.player.setCollideWorldBounds(true);
+    this.player.setBounce(0.2);
+
+    this.cameras.main.setBounds(0, 0, 800, 600);
+    this.cameras.main.setZoom(1.7);
+    this.cameras.main.startFollow(this.player);
     this.gun = this.add.image(100,100, "gun");
 
     this.bullets = this.physics.add.group({
@@ -32,13 +37,23 @@ class MainScene extends Phaser.Scene {
       key: "bullet"
     });
 
-    this.input.keyboard.on("keydown-J", function(){this.tryShoot();}, this);
+    this.platforms = this.physics.add.staticGroup();
+    //  Now let's create some ledges
+    this.platforms.create(600, 400, 'platforms');
+    this.platforms.create(50, 250, 'platforms');
+    this.platforms.create(750, 220, 'platforms');
+    this.platforms.create(400, 568, "platforms").setScale(2).refreshBody();
+    this.physics.add.collider(this.player, this.platforms);
+
+
+    this.input.keyboard.on("keydown-J", function(){this.tryShoot()}, this);
 
     this.keyCursors = {
     a: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
     s: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
     d: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-    w: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W)
+    k: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),
+    space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
     };
 
     }
@@ -63,28 +78,48 @@ class MainScene extends Phaser.Scene {
     else {
         this.player.setVelocityX(0);
         }
+        if (this.keyCursors.space.isDown && this.player.body.touching.down){
+        this.player.setVelocityY(-330);
+     }
     }
   tryShoot(){
     console.log("something");
     const bullet = this.bullets.get(this.gun.x, this.gun.y);
     if (bullet){
         console.log("grabs bullet");
-        this.fireBullet.call(this, bullet);
+        this.fireBullet.call(this, bullet, this.platforms);
     }
   }
-  fireBullet(bullet){
-      console.log(this.bullets);
-      bullet.enableBody(false);
-      bullet.setVelocityX(200);
-      bullet.setActive(true);
-      bullet.setVisible(true);
+  fireBullet(bullet, target){
+
       bullet.body.setCollideWorldBounds = true;
       bullet.body.onWorldBounds = true;
+      console.log(this.bullets);
+      bullet.enableBody(false);
+      if (!this.player.flipX){
+        bullet.setVelocityX(2000);
+      }
+      if (this.player.flipX){
+        bullet.setVelocityX(-2000);
+      }
+      bullet.setVelocityY(-200);
+      bullet.setActive(true);
+      bullet.setVisible(true);
+
+      if (target===this.platforms){
+          this.physics.add.collider(bullet, target, this.bulletHit, null, this);
+      }
+
   }
+
   killBullet(bullet){
       bullet.disableBody(true, true);
       bullet.setActive(false);
       bullet.setVisible(false);
+  }
+
+  bulletHit(bullet){
+    this.killBullet(bullet);
   }
 }
 const config = {
@@ -94,7 +129,7 @@ const config = {
   physics: {
       default: 'arcade',
       arcade: {
-          gravity: { y:0},
+          gravity: { y:300},
           debug: false
       }
   },
