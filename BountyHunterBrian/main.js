@@ -1,33 +1,85 @@
 
+//***************** PHASER.SCENE Built-in Functions ************//
 
-class MainScene extends Phaser.Scene {
-  constructor() {
-    super();
+
+//Static variables
+// pVelocity = player velocity
+// bVelocity = bullet velocity
+// pHP = player health
+
+let pVelocityX = 100;
+let pVelocityY = 150;
+let bVelocityX = 550;
+let pHP = 100;
+console.log(pHP);
+
+
+//Create a scene class for the level. Reducing memory usage.
+  class MainScene extends Phaser.Scene {
+      constructor() {
+      super();
+    }
+    preload(){
+
+    //player assets
+      this.load.image("player", "assets/character.png");
+      this.load.image("enemy", "assets/enemy.png");
+      this.load.image("gun", "assets/weapon.png");
+      this.load.image("bullet", "assets/bullet.png");
+
+    //Import JSON files for maps, procedural collectables
+    // and spawn points
+
+      this.load.image("tileset", "assets/map.png");
+      this.load.tilemapTiledJSON("tilemap", "assets/level1.json");
+
   }
-  preload(){
-    this.load.image("sky", "assets/sky.png");
-    this.load.image("platforms", "assets/platform.png");
-    this.load.image("player", "assets/character.png");
-    this.load.image("gun", "assets/weapon.png");
-    this.load.image("bullet", "assets/bullet-export.png")
-  }
+
+//Used this functions to place all assets into the world.
   create(){
 
-    this.cameras.main.setBounds(0, 0, 800, 600);
-    this.physics.world.setBounds(0, 0, 800, 600);
-    this.physics.world.on("worldbounds", function (body){
-    this.killBullet(body.gameObject)}, this);
+      this.cameras.main.setBounds(0, 0, 800, 600);
+      this.physics.world.setBounds(0, 0, 800, 600);
+      this.physics.world.on("worldbounds", function (body){
+      this.killBullet(body.gameObject)}, this);
 
-    this.add.image(400,300, "sky");
+        this.map = this.make.tilemap({ key: "tilemap" });
+        this.landscape = this.map.addTilesetImage("map", "tileset");
 
-    this.player = this.physics.add.image(100,100, "player");
-    this.player.setCollideWorldBounds(true);
-    this.player.setBounce(0.2);
+          this.map.createLayer("mitigate", this.landscape, 0, 0);
+          this.collisionLayer = this.map.createLayer("collisionLayer", this.landscape, 0, 0);
+          this.collisionLayer.setCollisionBetween(0,1000);
 
-    this.cameras.main.setBounds(0, 0, 800, 600);
-    this.cameras.main.setZoom(1.7);
-    this.cameras.main.startFollow(this.player);
-    this.gun = this.add.image(100,100, "gun");
+          this.playerSpawn = this.map.findObject("playerSpawns", function (object) {
+              if (object.name === "playerSpawns") {
+                return object;
+              }
+            });
+
+
+            this.spawnEnemies = this.physics.add.group();
+
+            this.spawnEnemyLoc.call(this, this.map, "enemySpawns", "npc", "enemy");
+            this.enemyCount = this.spawnEnemyLoc.length;
+            for (var i = 0; i < this.enemyCount; i++){
+              console.log("print my paper");
+              this.enemySpawn = this.spawnEnemyLoc.call(this, this.map, "enemySpawns", "npc", "enemy" + i);
+              var enemies = this.physics.add.image(this.enemySpawn.x, this.enemySpawn.y, "enemy");
+              this.spawnEnemies.add(enemies);
+            }
+
+            this.player = this.physics.add.image(this.playerSpawn.x, this.playerSpawn.y, "player");
+            this.player.setCollideWorldBounds(true);
+            this.player.setBounce(0.2);
+            this.player.setScale(0.5);
+
+            this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+            this.cameras.main.setZoom(1);
+            this.cameras.main.startFollow(this.player);
+            this.gun = this.add.image(100,100, "gun");
+            this.gun.setScale(0.5);
+
+            this.physics.add.collider(this.player, this.collisionLayer, this.enemy);
 
     this.bullets = this.physics.add.group({
       maxSize: 10,
@@ -37,95 +89,117 @@ class MainScene extends Phaser.Scene {
       key: "bullet"
     });
 
-    this.platforms = this.physics.add.staticGroup();
-    //  Now let's create some ledges
-    this.platforms.create(600, 400, 'platforms');
-    this.platforms.create(50, 250, 'platforms');
-    this.platforms.create(750, 220, 'platforms');
-    this.platforms.create(400, 568, "platforms").setScale(2).refreshBody();
-    this.physics.add.collider(this.player, this.platforms);
-
+    var health = this.add.text(250, 140, 'Health: '+ pHP, { fontSize: '12px',
+    fill: '#FFFFFF' }).setScrollFactor(0);
+    // Inputs for movement, pause and shooting Functions
 
     this.input.keyboard.on("keydown-J", function(){this.tryShoot()}, this);
+    this.input.keyboard.on("keydown-K", function(event){
+      pHP -= 10;
+      console.log(pHP);
+      health.setText("Health: " + pHP);
+    });
 
+    // Create an array list of buttons for movement
     this.keyCursors = {
     a: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
     s: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
     d: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
-    k: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.K),
     space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
     };
 
-    }
+  }
     update(){
+
+      //In order to shift player's location,
+      //update the location per frame.
+      //
       if (!this.player.flipX){
-          this.gun.x = this.player.x + 30;
+          this.gun.x = this.player.x + 10;
           this.gun.y = this.player.y;
         }
       else if (this.player.flipX){
-        this.gun.x = this.player.x - 30;
+        this.gun.x = this.player.x - 10;
         this.gun.y = this.player.y;
       }
       if (this.keyCursors.d.isDown){
-      this.player.setVelocityX(330);
+      this.player.setVelocityX(pVelocityX);
       this.player.flipX = false;
       this.gun.flipX = false;
     } else if (this.keyCursors.a.isDown){
-      this.player.setVelocityX(-330);
+      this.player.setVelocityX(-pVelocityX);
       this.player.flipX = true;
       this.gun.flipX = true;
     }
     else {
         this.player.setVelocityX(0);
         }
-        if (this.keyCursors.space.isDown && this.player.body.touching.down){
-        this.player.setVelocityY(-330);
+        if (this.keyCursors.space.isDown && this.player.body.blocked.down){
+        this.player.setVelocityY(-pVelocityY);
      }
     }
-  tryShoot(){
-    console.log("something");
-    const bullet = this.bullets.get(this.gun.x, this.gun.y);
-    if (bullet){
-        console.log("grabs bullet");
-        this.fireBullet.call(this, bullet, this.platforms);
-    }
-  }
-  fireBullet(bullet, target){
+  //Blast your opponents with this function
+     tryShoot(){
+            const bullet = this.bullets.get(this.gun.x, this.gun.y);
+            if (bullet){
+            this.fireBullet.call(this, bullet, this.collisionLayer);
+        }
+      }
+  // Create this function for the projectile to be executed
+    fireBullet(bullet, target){
 
       bullet.body.setCollideWorldBounds = true;
       bullet.body.onWorldBounds = true;
-      console.log(this.bullets);
       bullet.enableBody(false);
       if (!this.player.flipX){
-        bullet.setVelocityX(2000);
+        bullet.flipX = false;
+        bullet.setVelocityX(550);
       }
       if (this.player.flipX){
-        bullet.setVelocityX(-2000);
+        bullet.setVelocityX(-550);
+        bullet.flipX = true;
       }
-      bullet.setVelocityY(-200);
+      bullet.setVelocityY(-50);
       bullet.setActive(true);
       bullet.setVisible(true);
 
-      if (target===this.platforms){
+// Simple bullet-to-platform collision.
+// Execute the kill function every time it does.
+      if (target===this.collisionLayer){
           this.physics.add.collider(bullet, target, this.bulletHit, null, this);
       }
 
   }
-
+// Kill function here.
   killBullet(bullet){
       bullet.disableBody(true, true);
       bullet.setActive(false);
       bullet.setVisible(false);
   }
-
+// Kill callback function here.
   bulletHit(bullet){
     this.killBullet(bullet);
   }
+
+  spawnEnemyLoc(map, layer, type, name){
+      var location = map.findObject(layer, function(object){
+          if (object.type === type && object.name === name){
+            return location;
+            console.log(object);
+          }
+      });
+      return location;
+  }
 }
+
+//**  Create the level using PHASER scenes
+//**  instead of using three separate config
+//**  functions.
+
 const config = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
+  width: 832,
+  height: 432,
   physics: {
       default: 'arcade',
       arcade: {
