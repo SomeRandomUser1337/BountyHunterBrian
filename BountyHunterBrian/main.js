@@ -57,16 +57,14 @@ console.log(pHP);
             });
 
 
-            this.spawnEnemies = this.physics.add.group();
+            var enemyLocType;
+            var enemies = this.physics.add.group();
+            this.map.findObject("enemySpawns", function (object){
+              if (object.type === "npc" && object.name === "enemy"){
+                enemies.create(object.x, object.y, "enemy");
+              }
+            });
 
-            this.spawnEnemyLoc.call(this, this.map, "enemySpawns", "npc", "enemy");
-            this.enemyCount = this.spawnEnemyLoc.length;
-            for (var i = 0; i < this.enemyCount; i++){
-              console.log("print my paper");
-              this.enemySpawn = this.spawnEnemyLoc.call(this, this.map, "enemySpawns", "npc", "enemy" + i);
-              var enemies = this.physics.add.image(this.enemySpawn.x, this.enemySpawn.y, "enemy");
-              this.spawnEnemies.add(enemies);
-            }
 
             this.player = this.physics.add.image(this.playerSpawn.x, this.playerSpawn.y, "player");
             this.player.setCollideWorldBounds(true);
@@ -79,7 +77,10 @@ console.log(pHP);
             this.gun = this.add.image(100,100, "gun");
             this.gun.setScale(0.5);
 
-            this.physics.add.collider(this.player, this.collisionLayer, this.enemy);
+            this.physics.add.collider(this.player, this.collisionLayer);
+            this.physics.add.collider(enemies, this.collisionLayer);
+            this.physics.add.collider(this.player, enemies);
+
 
     this.bullets = this.physics.add.group({
       maxSize: 10,
@@ -181,14 +182,23 @@ console.log(pHP);
     this.killBullet(bullet);
   }
 
-  spawnEnemyLoc(map, layer, type, name){
-      var location = map.findObject(layer, function(object){
-          if (object.type === type && object.name === name){
-            return location;
-            console.log(object);
-          }
-      });
-      return location;
+
+  findEnemyLocType(map, layer, type){
+    var location = this.map.filterObjects(layer, function(object){
+      if (object.type === type){
+        return object;
+      }
+    });
+    return location;
+  }
+
+  findEnemyLocation(map, layer, type, name){
+    var location = map.findObject(layer, function (object){
+        if (object.type === type && object.name === name){
+          return object;
+        }
+    });
+    return location;
   }
 }
 

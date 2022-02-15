@@ -84,8 +84,8 @@
                  "type":"npc",
                  "visible":true,
                  "width":0,
-                 "x":598.666666666667,
-                 "y":334.666666666667
+                 "x":598.667,
+                 "y":334.667
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -107,7 +107,7 @@
                  "type":"player",
                  "visible":true,
                  "width":0,
-                 "x":26.6666666666667,
+                 "x":26.6667,
                  "y":67
                 }],
          "opacity":1,
@@ -225,7 +225,7 @@
                  "type":"",
                  "visible":true,
                  "width":0,
-                 "x":100.000333333333,
+                 "x":100,
                  "y":80
                 }, 
                 {
@@ -304,7 +304,7 @@
         {
          "columns":10,
          "firstgid":1,
-         "image":"map.png",
+         "image":"F:\/uni_portfolio2022\/Gabe the Star Paladin\/assets\/map\/map.png",
          "imageheight":160,
          "imagewidth":160,
          "margin":0,
